@@ -4,6 +4,7 @@
   "package": "com.lingmu0.JeiPlusPlusMod.mixin",
   "compatibilityLevel": "JAVA_17",
   "refmap": "jei_plus_plus.refmap.json",
+  "plugin": "com.lingmu0.JeiPlusPlusMod.mixin.JeiPlusPlusMixinConfigPlugin",
   "mixins": [],
   "client": [
     "RecipeGuiLayoutsMixin",
@@ -11,7 +12,8 @@
     "RecipeLayoutWithButtonsMixin",
     "RecipesGuiMixin",
     "RecipeBookmarkElementMixin",
-    "IngredientLookupStateMixin",
+    "IngredientLookupStateLegacyMixin",
+    "IngredientLookupStateServiceMixin",
     "IngredientListRendererMixin",
     "IngredientListRendererLegacyMixin",
     "BookmarkInputHandlerMixin",

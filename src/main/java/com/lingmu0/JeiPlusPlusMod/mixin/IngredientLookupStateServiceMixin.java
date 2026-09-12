@@ -4,7 +4,7 @@ import com.lingmu0.JeiPlusPlusMod.client.RecipeBookmarkNavigationContext;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.IRecipeManager;
-import mezz.jei.api.recipe.transfer.IRecipeTransferManager;
+import mezz.jei.common.transfer.RecipeTransferService;
 import mezz.jei.gui.recipes.lookups.ILookupState;
 import mezz.jei.gui.recipes.lookups.IngredientLookupState;
 import org.spongepowered.asm.mixin.Mixin;
@@ -14,15 +14,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
 
-/** Starts a recipe-bookmark lookup on the bookmark's category. */
+/** JEI 1.21.1 lookup hook used after RecipeTransferService was introduced. */
 @Mixin(value = IngredientLookupState.class, remap = false)
-public abstract class IngredientLookupStateMixin {
+public abstract class IngredientLookupStateServiceMixin {
     @Inject(method = "create", at = @At("RETURN"), remap = false)
     private static void jeiPlusPlus$bookmarkCategoryFirst(
         IRecipeManager recipeManager,
         IFocusGroup focusGroup,
         java.util.List<IRecipeCategory<?>> recipeCategories,
-        IRecipeTransferManager recipeTransferManager,
+        RecipeTransferService recipeTransferService,
         CallbackInfoReturnable<ILookupState> cir
     ) {
         Optional<IRecipeCategory<?>> category = RecipeBookmarkNavigationContext.category();

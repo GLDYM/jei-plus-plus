@@ -27,6 +27,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Objects;
@@ -134,7 +135,43 @@ public abstract class BookmarkInputHandlerMixin {
             return null;
         }
         ITypedIngredient<?> normalized = runtime.getIngredientManager().normalizeTypedIngredient(output.get());
-        return new RecipeBookmark(layout.getRecipeCategory(), layout.getRecipe(), recipeUid, normalized, true);
+        Object[] arguments = {
+            layout.getRecipeCategory(),
+            layout.getRecipe(),
+            recipeUid,
+            normalized,
+            true
+        };
+        try {
+            for (Constructor<?> constructor : RecipeBookmark.class.getDeclaredConstructors()) {
+                Class<?>[] parameterTypes = constructor.getParameterTypes();
+                if (parameterTypes.length == arguments.length) {
+                    constructor.setAccessible(true);
+                    return (RecipeBookmark<?, ?>) constructor.newInstance(arguments);
+                }
+                if (parameterTypes.length == arguments.length + 1
+                    && parameterTypes[arguments.length].getName().equals(
+                        "mezz.jei.common.transfer.RecipeTransferService")) {
+                    constructor.setAccessible(true);
+                    Object transferService = createRecipeTransferService(runtime);
+                    Object[] newArguments = java.util.Arrays.copyOf(arguments, arguments.length + 1);
+                    newArguments[arguments.length] = transferService;
+                    return (RecipeBookmark<?, ?>) constructor.newInstance(newArguments);
+                }
+            }
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            // JEI may change its internal bookmark constructor again.
+        }
+        return null;
+    }
+
+    private static Object createRecipeTransferService(IJeiRuntime runtime)
+        throws ReflectiveOperationException {
+        Class<?> serviceClass = Class.forName("mezz.jei.common.transfer.RecipeTransferService");
+        Class<?> managerClass = Class.forName("mezz.jei.api.recipe.transfer.IRecipeTransferManager");
+        Constructor<?> constructor = serviceClass.getDeclaredConstructor(managerClass);
+        constructor.setAccessible(true);
+        return constructor.newInstance(runtime.getRecipeTransferManager());
     }
 
     /**
