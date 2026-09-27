@@ -21,6 +21,14 @@ public interface IngredientListFeatureSource {
 
     void jeiPlusPlus$setCreativeTabPage(int page);
 
+    boolean jeiPlusPlus$isCreativeTabSelectorOpen();
+
+    void jeiPlusPlus$setCreativeTabSelectorOpen(boolean open);
+
+    int jeiPlusPlus$getCreativeTabSelectorPage();
+
+    void jeiPlusPlus$setCreativeTabSelectorPage(int page);
+
     void jeiPlusPlus$toggleGroup(String groupKey);
 
     List<IElement<?>> jeiPlusPlus$transformElements(List<IElement<?>> elements);

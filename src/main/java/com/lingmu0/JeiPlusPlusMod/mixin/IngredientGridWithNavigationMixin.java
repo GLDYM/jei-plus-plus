@@ -2,6 +2,8 @@ package com.lingmu0.JeiPlusPlusMod.mixin;
 
 import com.lingmu0.JeiPlusPlusMod.client.CreativeTabGridCompat;
 import mezz.jei.common.util.ImmutableRect2i;
+import mezz.jei.gui.input.IClickableIngredientInternal;
+import mezz.jei.gui.input.IDraggableIngredientInternal;
 import mezz.jei.gui.input.IUserInputHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -12,6 +14,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.stream.Stream;
 
 /** JEI 15.19-15.47 ingredient-grid hooks. */
 @Pseudo
@@ -34,8 +38,44 @@ public abstract class IngredientGridWithNavigationMixin {
         CreativeTabGridCompat.drawTooltip(this, graphics, mouseX, mouseY);
     }
 
+    @Inject(method = "drawTooltips", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
+    private void jeiPlusPlus$hideUnderlyingTooltipsWhileSelectorOpen(
+        Minecraft minecraft,
+        GuiGraphics graphics,
+        int mouseX,
+        int mouseY,
+        CallbackInfo ci
+    ) {
+        if (CreativeTabGridCompat.isSelectorOpen(this)) {
+            CreativeTabGridCompat.drawTooltip(this, graphics, mouseX, mouseY);
+            ci.cancel();
+        }
+    }
+
     @Inject(method = "createInputHandler", at = @At("RETURN"), cancellable = true, remap = false)
     private void jeiPlusPlus$wrapCreativeTabInput(CallbackInfoReturnable<IUserInputHandler> cir) {
         cir.setReturnValue(CreativeTabGridCompat.wrapInput(this, cir.getReturnValue()));
+    }
+
+    @Inject(method = "getIngredientUnderMouse", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
+    private void jeiPlusPlus$blockIngredientLookupWhileSelectorOpen(
+        double mouseX,
+        double mouseY,
+        CallbackInfoReturnable<Stream<IClickableIngredientInternal<?>>> cir
+    ) {
+        if (CreativeTabGridCompat.isSelectorOpen(this)) {
+            cir.setReturnValue(Stream.empty());
+        }
+    }
+
+    @Inject(method = "getDraggableIngredientUnderMouse", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
+    private void jeiPlusPlus$blockIngredientDragWhileSelectorOpen(
+        double mouseX,
+        double mouseY,
+        CallbackInfoReturnable<Stream<IDraggableIngredientInternal<?>>> cir
+    ) {
+        if (CreativeTabGridCompat.isSelectorOpen(this)) {
+            cir.setReturnValue(Stream.empty());
+        }
     }
 }

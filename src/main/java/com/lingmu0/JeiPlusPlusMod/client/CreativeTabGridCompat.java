@@ -15,6 +15,8 @@ import java.util.Optional;
 
 /** Shared reflective bridge for JEI's pre- and post-15.48 ingredient grids. */
 public final class CreativeTabGridCompat {
+    private static volatile boolean selectorOpen;
+
     private static final ClassValue<GridAccess> ACCESS = new ClassValue<>() {
         @Override
         protected GridAccess computeValue(Class<?> type) {
@@ -54,6 +56,22 @@ public final class CreativeTabGridCompat {
 
     public static IUserInputHandler wrapInput(Object owner, IUserInputHandler delegate) {
         return new CreativeTabInputHandler(owner, delegate);
+    }
+
+    public static boolean isSelectorOpen(Object owner) {
+        if (selectorOpen) {
+            return true;
+        }
+        IngredientListFeatureSource source = getFeatureSource(owner);
+        return source != null && source.jeiPlusPlus$isCreativeTabSelectorOpen();
+    }
+
+    public static void setSelectorOpen(boolean open) {
+        selectorOpen = open;
+    }
+
+    public static boolean isAnySelectorOpen() {
+        return selectorOpen;
     }
 
     private static IngredientListFeatureSource getFeatureSource(Object owner) {

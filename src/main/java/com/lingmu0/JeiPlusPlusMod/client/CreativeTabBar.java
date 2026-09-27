@@ -1,5 +1,6 @@
 package com.lingmu0.JeiPlusPlusMod.client;
 
+import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
 import com.mojang.blaze3d.platform.InputConstants;
 import mezz.jei.common.util.ImmutableRect2i;
 import mezz.jei.gui.input.IUserInputHandler;
@@ -98,23 +99,28 @@ public final class CreativeTabBar {
         var pose = guiGraphics.pose();
         pose.pushPose();
         pose.translate(0.0D, 0.0D, 300.0D);
-        drawPageButton(guiGraphics, area.getX(), area.getY(), true, page > 0,
+        drawPageButton(guiGraphics, area.getX(), area.getY(), true, pageCount > 1,
             isInside(area, area.getX(), mouseX, mouseY));
         drawPageButton(guiGraphics, area.getX() + area.getWidth() - SLOT_SIZE, area.getY(), false,
-            page + 1 < pageCount,
+            pageCount > 1,
             isInside(area, area.getX() + area.getWidth() - SLOT_SIZE, mouseX, mouseY));
 
         String pageLabel = (page + 1) + "/" + pageCount;
-        int labelX = area.getX() + (area.getWidth() - Minecraft.getInstance().font.width(pageLabel)) / 2;
-        guiGraphics.drawString(
-            Minecraft.getInstance().font,
-            pageLabel,
-            labelX,
-            area.getY() + 5,
-            0xFFFFFFFF,
-            true
-        );
+        if (JeiPlusPlusConfig.CREATIVE_TAB_PAGE_NUMBER_ENABLED.get()) {
+            int labelX = area.getX() + (area.getWidth() - Minecraft.getInstance().font.width(pageLabel)) / 2;
+            guiGraphics.drawString(
+                Minecraft.getInstance().font,
+                pageLabel,
+                labelX,
+                area.getY() + 5,
+                0xFFFFFFFF,
+                true
+            );
+        }
         pose.popPose();
+        if (source.jeiPlusPlus$isCreativeTabSelectorOpen()) {
+            CreativeTabSelector.draw(source, guiGraphics, mouseX, mouseY);
+        }
     }
 
     public static void drawTooltip(
@@ -127,9 +133,13 @@ public final class CreativeTabBar {
         if (!isEnabled(source) || area.isEmpty()) {
             return;
         }
+        if (source.jeiPlusPlus$isCreativeTabSelectorOpen()) {
+            CreativeTabSelector.drawTooltip(source, guiGraphics, mouseX, mouseY);
+            return;
+        }
         int pageCount = getPageCount(source.jeiPlusPlus$getCreativeTabs().size() + 1, getCapacity(area));
         int page = clampPage(source.jeiPlusPlus$getCreativeTabPage(), pageCount);
-        if (isPageButton(area, mouseX, mouseY, true) && page > 0) {
+        if (isPageButton(area, mouseX, mouseY, true) && pageCount > 1) {
             guiGraphics.renderTooltip(
                 Minecraft.getInstance().font,
                 Component.translatable("jei_plus_plus.creative_tab.previous_page"),
@@ -138,7 +148,7 @@ public final class CreativeTabBar {
             );
             return;
         }
-        if (isPageButton(area, mouseX, mouseY, false) && page + 1 < pageCount) {
+        if (isPageButton(area, mouseX, mouseY, false) && pageCount > 1) {
             guiGraphics.renderTooltip(
                 Minecraft.getInstance().font,
                 Component.translatable("jei_plus_plus.creative_tab.next_page"),
@@ -160,18 +170,18 @@ public final class CreativeTabBar {
         ImmutableRect2i area,
         UserInput input
     ) {
+        if (source != null && source.jeiPlusPlus$isCreativeTabSelectorOpen()) {
+            return CreativeTabSelector.handleClick(source, area, input);
+        }
         if (!isEnabled(source)
             || input.getKey().getType() != InputConstants.Type.MOUSE
             || !area.contains(input.getMouseX(), input.getMouseY())) {
             return false;
         }
-        // A right-click anywhere in the strip is a quick way back to the
-        // unfiltered "All items" category, matching the category-bar reset
-        // behavior users expect from JEI-style tab controls.
         if (input.getKey().getValue() == 1) {
             if (!input.isSimulate()) {
-                source.jeiPlusPlus$setCreativeTabPage(0);
-                source.jeiPlusPlus$selectCreativeTab(0);
+                source.jeiPlusPlus$setCreativeTabSelectorPage(0);
+                source.jeiPlusPlus$setCreativeTabSelectorOpen(true);
             }
             return true;
         }
@@ -186,7 +196,7 @@ public final class CreativeTabBar {
         if (previous || next) {
             if (!input.isSimulate()) {
                 int target = page + (next ? 1 : -1);
-                source.jeiPlusPlus$setCreativeTabPage(clampPage(target, pageCount));
+                source.jeiPlusPlus$setCreativeTabPage(Math.floorMod(target, pageCount));
             }
             return true;
         }
@@ -210,6 +220,11 @@ public final class CreativeTabBar {
         double scrollDeltaY,
         IUserInputHandler self
     ) {
+        if (source != null && source.jeiPlusPlus$isCreativeTabSelectorOpen()) {
+            if (CreativeTabSelector.handleScroll(source, mouseX, mouseY, scrollDeltaY)) {
+                return Optional.of(self);
+            }
+        }
         if (!isEnabled(source) || scrollDeltaY == 0 || !area.contains(mouseX, mouseY)) {
             return Optional.empty();
         }
@@ -217,7 +232,7 @@ public final class CreativeTabBar {
         int pageCount = getPageCount(source.jeiPlusPlus$getCreativeTabs().size() + 1, capacity);
         int page = clampPage(source.jeiPlusPlus$getCreativeTabPage(), pageCount);
         int next = scrollDeltaY < 0 ? page + 1 : page - 1;
-        source.jeiPlusPlus$setCreativeTabPage(clampPage(next, pageCount));
+        source.jeiPlusPlus$setCreativeTabPage(Math.floorMod(next, pageCount));
         return Optional.of(self);
     }
 
@@ -225,7 +240,7 @@ public final class CreativeTabBar {
         return source != null && !source.jeiPlusPlus$getCreativeTabs().isEmpty();
     }
 
-    private static int getCapacity(ImmutableRect2i area) {
+    static int getCapacity(ImmutableRect2i area) {
         // The page label is an overlay and does not consume a category slot.
         int contentWidth = Math.max(SLOT_SIZE, area.getWidth() - SLOT_SIZE * 2);
         return Math.max(1, Math.min(MAX_VISIBLE_TABS, contentWidth / SLOT_SIZE));

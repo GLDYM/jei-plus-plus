@@ -2,6 +2,7 @@ package com.lingmu0.JeiPlusPlusMod.mixin;
 
 import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeFavorites;
 import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeTransfer;
+import com.lingmu0.JeiPlusPlusMod.client.CreativeTabGridCompat;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -14,6 +15,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(AbstractContainerScreen.class)
 public abstract class AbstractContainerScreenMixin {
+    @Inject(method = "renderTooltip", at = @At("HEAD"), cancellable = true, require = 0)
+    private void jeiPlusPlus$hideContainerTooltipWhileSelectorOpen(
+        GuiGraphics graphics,
+        int mouseX,
+        int mouseY,
+        CallbackInfo ci
+    ) {
+        if (CreativeTabGridCompat.isAnySelectorOpen()) {
+            ci.cancel();
+        }
+    }
+
     @Inject(method = "render", at = @At("HEAD"))
     private void jeiPlusPlus$updateRecipeTreeCrafting(
         GuiGraphics graphics,
@@ -33,7 +46,16 @@ public abstract class AbstractContainerScreenMixin {
 
     @Inject(method = "renderSlot", at = @At("TAIL"))
     private void jeiPlusPlus$highlightRequiredInventoryStack(GuiGraphics graphics, Slot slot, CallbackInfo ci) {
-        if (!(slot.container instanceof Inventory) || slot.getItem().isEmpty()) {
+        if (slot.getItem().isEmpty()) {
+            return;
+        }
+        var player = net.minecraft.client.Minecraft.getInstance().player;
+        AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
+        // Keep the player's crafting grid and other private UI slots out of
+        // inventory highlights, while including slots in opened containers.
+        if (player != null
+            && screen.getMenu() == player.inventoryMenu
+            && !(slot.container instanceof Inventory)) {
             return;
         }
         boolean finalProduct = RecipeTreeFavorites.isFinalProduct(slot.getItem());

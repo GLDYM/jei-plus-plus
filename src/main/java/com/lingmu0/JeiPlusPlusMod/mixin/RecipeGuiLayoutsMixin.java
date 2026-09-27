@@ -1,5 +1,7 @@
 package com.lingmu0.JeiPlusPlusMod.mixin;
 
+import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
+import com.lingmu0.JeiPlusPlusMod.client.CreativeTabGridCompat;
 import com.lingmu0.JeiPlusPlusMod.client.DirectoryIngredientElement;
 import mezz.jei.api.gui.inputs.RecipeSlotUnderMouse;
 import mezz.jei.api.ingredients.ITypedIngredient;
@@ -19,6 +21,18 @@ import java.util.Optional;
 /** Adds a directory action to cycling/multi-ingredient recipe slots. */
 @Mixin(value = RecipeGuiLayouts.class, remap = false)
 public abstract class RecipeGuiLayoutsMixin {
+    @Inject(method = "drawTooltips", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
+    private void jeiPlusPlus$hideRecipeTooltipsWhileSelectorOpen(
+        GuiGraphics graphics,
+        int mouseX,
+        int mouseY,
+        org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci
+    ) {
+        if (CreativeTabGridCompat.isAnySelectorOpen()) {
+            ci.cancel();
+        }
+    }
+
     @Inject(method = "getWidth", at = @At("RETURN"), cancellable = true, remap = false)
     private void jeiPlusPlus$reserveRecipeTreeWidth(CallbackInfoReturnable<Integer> cir) {
         int extra = com.lingmu0.JeiPlusPlusMod.client.RecipeTreeOverlay.extraWidth(
@@ -52,6 +66,9 @@ public abstract class RecipeGuiLayoutsMixin {
         RecipeSlotUnderMouse slotUnderMouse,
         CallbackInfoReturnable<Optional<IClickableIngredientInternal<?>>> cir
     ) {
+        if (!JeiPlusPlusConfig.RECIPE_INGREDIENT_DIRECTORY_ENABLED.get()) {
+            return;
+        }
         List<ITypedIngredient<?>> ingredients = slotUnderMouse.slot().getAllIngredients().toList();
         if (ingredients.size() <= 1) {
             return;

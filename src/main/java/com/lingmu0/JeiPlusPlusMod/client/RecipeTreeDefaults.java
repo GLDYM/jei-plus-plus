@@ -27,6 +27,7 @@ public final class RecipeTreeDefaults {
     private static final Map<String, String> RESOLUTIONS = new HashMap<>();
     private static final Set<String> DISABLED_RECIPES = new HashSet<>();
     private static final Set<String> BUILTIN_RECIPE_IDS = new HashSet<>();
+    private static final Map<String, Status> STATUS_CACHE = new HashMap<>();
     private static boolean loaded;
 
     private RecipeTreeDefaults() {
@@ -39,6 +40,7 @@ public final class RecipeTreeDefaults {
     }
 
     public static void reload() {
+        STATUS_CACHE.clear();
         RESOLUTIONS.clear();
         DISABLED_RECIPES.clear();
         BUILTIN_RECIPE_IDS.clear();
@@ -76,6 +78,11 @@ public final class RecipeTreeDefaults {
         if (recipe == null || recipe.outputs().isEmpty()) {
             return Status.EMPTY;
         }
+        ensureLoaded();
+        return STATUS_CACHE.computeIfAbsent(recipe.ref().key(), ignored -> calculateStatus(recipe));
+    }
+
+    private static Status calculateStatus(RecipeTreeData.RecipeSnapshot recipe) {
         int matches = 0;
         int outputs = 0;
         Set<String> visited = new HashSet<>();
@@ -115,6 +122,7 @@ public final class RecipeTreeDefaults {
                 RESOLUTIONS.put(RecipeTreeData.ingredientKey(output), recipeKey);
             }
         }
+        STATUS_CACHE.clear();
         saveUserData();
         RecipeTreeSession.refreshDefaults();
     }

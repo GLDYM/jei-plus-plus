@@ -47,8 +47,9 @@ JEI++ 是一个仅客户端运行的 JEI 附属模组，为 JEI 增加配方目�
 ### 创造物品分类栏
 
 - 在 JEI 物品列表上方显示全部物品和创造模式分类。
-- 左右按钮与物品槽等大，滚轮翻整页，页码居中绘制在分类栏上方，不占用物品槽。
-- 分类、物品、数量和页码覆盖层的绘制层级保证数字位于物品贴图上方。
+- 分类栏支持循环翻页；右键打开分类选择弹窗，每行显示四个分类，左键直接切换，右键置顶或取消置顶。
+- 置顶分类排在未置顶分类之前，后置顶的分类显示在更前面；可用 `creativeTabPageNumberEnabled` 单独控制页码显示。
+- 页码不占用普通物品槽位；选择弹窗绘制在底层物品贴图和高亮之上，弹窗打开时不显示底层物品提示。
 
 ### 物品分组
 
@@ -59,7 +60,9 @@ JEI++ 是一个仅客户端运行的 JEI 附属模组，为 JEI 增加配方目�
 
 ### 性能与兼容
 
-- 配方候选、布局、背包/网络快照和流体访问器使用缓存，按游戏刻和修订号刷新；递归搜索具备深度、访问量和循环保护，仅用于配方树和默认配方。
+- 配方候选、按配方键缓存的配方快照、配方状态、布局、背包/网络快照和流体访问器使用缓存，按游戏刻和修订号刷新，减少渲染期间的重复扫描。
+- 当前打开的容器物品会计入配方树库存并按需求高亮；分类选择弹窗打开时会屏蔽底层 JEI、背包和容器物品的 tooltip。
+- 递归搜索具备深度、访问量和循环保护，仅用于配方树和默认配方。
 - 兼容多种 JEI 书签、配方布局、物品列表和渲染路径，并提供 Minecraft 1.20.1 Forge 实现。
 - JEI 重载、存档切换、终端切换、可选模组缺失或 API 变化时安全清理和恢复运行时状态。
 
@@ -74,6 +77,9 @@ JEI++ 是一个仅客户端运行的 JEI 附属模组，为 JEI 增加配方目�
 | `preferRecipeBookmarkOnOutput` | `true` | 在 JEI 书签优先排序开启时收藏输出配方 |
 | `hideRecipeBookmarkButton` | `true` | 隐藏 JEI 原生添加到书签按钮 |
 | `creativeTabBarEnabled` | `true` | 显示创造物品分类栏 |
+| `creativeTabPageNumberEnabled` | `true` | 显示分类栏当前页码 |
+| `recipeIngredientDirectoryEnabled` | `true` | 启用点击配方多候选槽位时打开物品目录的功能 |
+| `pinnedCreativeTabs` | `[]` | 分类弹窗置顶分类列表；通常通过右键分类调整 |
 | `stackGroupingEnabled` | `true` | 物品分组总开关 |
 | `nbtGroupingEnabled` | `true` | 折叠不同 NBT/组件 |
 | `tagGroupingEnabled` | `true` | 启用 Tag 分组 |
@@ -115,9 +121,9 @@ JSON 分组示例：
 
 ## 版本与依赖
 
-| 游戏版本 | 加载器 | Java | 当前开发依赖 |
-| --- | --- | --- | --- |
-| 1.20.1 | Forge 47.4.22 | 17 | JEI 15.58.0.209 |
+| 游戏版本 | 加载器 | Java | JEI 开发依赖 | 模组版本 |
+| --- | --- | --- | --- | --- |
+| 1.20.1 | Forge 47.4.22 | 17 | JEI 15.59.0.210 | 1.0.6-1.20.1 |
 
 声明的 JEI 兼容范围从 15.19.5.99 起，表中版本是当前开发依赖。
 
@@ -147,15 +153,15 @@ Optional reflective client integrations support AE2, Refined Storage RS1/RS2, Be
 
 ### Creative tabs, item groups, and compatibility
 
-The creative tab bar provides all-items and creative categories, slot-sized left/right buttons, complete-page wheel scrolling, and a centered page overlay. Built-in expandable groups cover common material and tool families, NBT/component variants such as potions and enchanted books, and configurable item/tag/regex JSON groups. Every default group has its own switch; `mixNamespaceGroups` controls namespace mixing. JEI++ disables its grouping transform when another grouping addon is present.
+The creative tab bar provides all-items and creative categories with wrapping pages. Right-click opens a four-column picker; left-click selects a category and right-click pins or unpins it. Pinned categories appear first, and `creativeTabPageNumberEnabled` controls the page indicator. The item-directory behavior for multi-candidate recipe slots can be toggled with `recipeIngredientDirectoryEnabled`. Built-in expandable groups cover common material and tool families, NBT/component variants such as potions and enchanted books, and configurable item/tag/regex JSON groups. Every default group has its own switch; `mixNamespaceGroups` controls namespace mixing. JEI++ disables its grouping transform when another grouping addon is present.
 
-Candidate, layout, inventory/network, and fluid caches reduce repeated scans; recursive searches are bounded. Multiple JEI paths are supported on Forge 1.20.1, and optional integrations fail safely on missing mods or changed APIs.
+Candidate, per-recipe snapshot, recipe-status, layout, inventory/network, and fluid caches reduce repeated scans; items in the open container count toward recipe-tree inventory and highlighting. Recursive searches are bounded. Multiple JEI paths are supported on Forge 1.20.1, and optional integrations fail safely on missing mods or changed APIs.
 
 ### Version and dependency
 
-| Minecraft | Loader | Java | Current development dependency |
-| --- | --- | --- | --- |
-| 1.20.1 | Forge 47.4.22 | 17 | JEI 15.58.0.209 |
+| Minecraft | Loader | Java | JEI development dependency | Mod version |
+| --- | --- | --- | --- | --- |
+| 1.20.1 | Forge 47.4.22 | 17 | JEI 15.59.0.210 | 1.0.6-1.20.1 |
 
 The declared JEI compatibility floor is 15.19.5.99; the table lists the current development dependency.
 
