@@ -1,6 +1,8 @@
 package com.lingmu0.JeiPlusPlusMod.mixin;
 
 import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
+import com.lingmu0.JeiPlusPlusMod.client.CreativeTabOrder;
+import com.lingmu0.JeiPlusPlusMod.client.CreativeTabGridCompat;
 import com.lingmu0.JeiPlusPlusMod.client.IngredientListFeatureSource;
 import com.lingmu0.JeiPlusPlusMod.client.IngredientListFeatures;
 import mezz.jei.gui.ingredients.IngredientFilter;
@@ -27,6 +29,10 @@ public abstract class IngredientFilterMixin implements IngredientListFeatureSour
     private volatile int jeiPlusPlus$selectedCreativeTab;
     @Unique
     private volatile int jeiPlusPlus$creativeTabPage;
+    @Unique
+    private volatile boolean jeiPlusPlus$creativeTabSelectorOpen;
+    @Unique
+    private volatile int jeiPlusPlus$creativeTabSelectorPage;
     @Unique
     private final Set<String> jeiPlusPlus$expandedGroups = ConcurrentHashMap.newKeySet();
     @Unique
@@ -91,7 +97,7 @@ public abstract class IngredientFilterMixin implements IngredientListFeatureSour
                 result.add(tab);
             }
         }
-        return List.copyOf(result);
+        return CreativeTabOrder.order(result);
     }
 
     @Override
@@ -125,6 +131,27 @@ public abstract class IngredientFilterMixin implements IngredientListFeatureSour
     @Override
     public void jeiPlusPlus$setCreativeTabPage(int page) {
         jeiPlusPlus$creativeTabPage = Math.max(0, page);
+    }
+
+    @Override
+    public boolean jeiPlusPlus$isCreativeTabSelectorOpen() {
+        return jeiPlusPlus$creativeTabSelectorOpen;
+    }
+
+    @Override
+    public void jeiPlusPlus$setCreativeTabSelectorOpen(boolean open) {
+        jeiPlusPlus$creativeTabSelectorOpen = open;
+        CreativeTabGridCompat.setSelectorOpen(open);
+    }
+
+    @Override
+    public int jeiPlusPlus$getCreativeTabSelectorPage() {
+        return Math.max(0, jeiPlusPlus$creativeTabSelectorPage);
+    }
+
+    @Override
+    public void jeiPlusPlus$setCreativeTabSelectorPage(int page) {
+        jeiPlusPlus$creativeTabSelectorPage = Math.max(0, page);
     }
 
     @Override

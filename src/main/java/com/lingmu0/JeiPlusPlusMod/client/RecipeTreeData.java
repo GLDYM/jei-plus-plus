@@ -49,6 +49,7 @@ public final class RecipeTreeData {
 
     private static final Map<String, List<RecipeRef>> CANDIDATE_CACHE = new HashMap<>();
     private static final Map<String, List<RecipeSnapshot>> SNAPSHOT_CACHE = new HashMap<>();
+    private static final Map<String, RecipeSnapshot> RECIPE_SNAPSHOT_CACHE = new HashMap<>();
     private static final Map<String, IRecipeLayoutDrawable<?>> LAYOUT_CACHE = new HashMap<>();
     private static CandidateContext cachedCandidateContext;
     private static Object cachedCandidateMenu;
@@ -1001,14 +1002,28 @@ public final class RecipeTreeData {
     }
 
     public static Optional<RecipeSnapshot> snapshot(IRecipeLayoutDrawable<?> layout) {
-        if (!isSupported(layout)) {
+        if (layout == null || !isSupportedCategory(layout.getRecipeCategory())) {
             return Optional.empty();
         }
         RecipeRef ref = ref(layout.getRecipeCategory(), layout.getRecipe());
+        RecipeSnapshot cached = RECIPE_SNAPSHOT_CACHE.get(ref.key());
+        if (cached != null) {
+            return Optional.of(cached);
+        }
+        if (firstOutput(layout).isEmpty()) {
+            return Optional.empty();
+        }
         return Optional.of(snapshot(ref, layout));
     }
 
     public static RecipeSnapshot snapshot(RecipeRef ref) {
+        if (ref == null) {
+            return null;
+        }
+        RecipeSnapshot cached = RECIPE_SNAPSHOT_CACHE.get(ref.key());
+        if (cached != null) {
+            return cached;
+        }
         return createLayout(ref)
             .map(layout -> snapshot(ref, layout))
             .orElse(null);
@@ -1142,6 +1157,7 @@ public final class RecipeTreeData {
     public static void clearCaches() {
         CANDIDATE_CACHE.clear();
         SNAPSHOT_CACHE.clear();
+        RECIPE_SNAPSHOT_CACHE.clear();
         LAYOUT_CACHE.clear();
         FluidRecipeCompat.clear();
         cachedCandidateContext = null;
@@ -1170,6 +1186,10 @@ public final class RecipeTreeData {
     }
 
     private static RecipeSnapshot snapshot(RecipeRef ref, IRecipeLayoutDrawable<?> layout) {
+        RecipeSnapshot cached = RECIPE_SNAPSHOT_CACHE.get(ref.key());
+        if (cached != null) {
+            return cached;
+        }
         Map<String, MutableRecipeInput> groupedInputs = new LinkedHashMap<>();
         Map<String, ItemStack> outputs = new LinkedHashMap<>();
         int inputSlotCount = 0;
@@ -1207,7 +1227,9 @@ public final class RecipeTreeData {
         List<RecipeInput> inputs = groupedInputs.values().stream()
             .map(MutableRecipeInput::freeze)
             .toList();
-        return new RecipeSnapshot(ref, inputs, inputSlotCount, List.copyOf(outputs.values()));
+        RecipeSnapshot snapshot = new RecipeSnapshot(ref, inputs, inputSlotCount, List.copyOf(outputs.values()));
+        RECIPE_SNAPSHOT_CACHE.put(ref.key(), snapshot);
+        return snapshot;
     }
 
     private static void addRecipeInput(
@@ -1355,7 +1377,22 @@ public final class RecipeTreeData {
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             ItemStack stack = inventory.getItem(i);
             if (!stack.isEmpty()) {
-            addSupply(result, stack, stack.getCount());
+                addSupply(result, stack, stack.getCount());
+            }
+        }
+        // Items in the currently open container are also available to the
+        // recipe tree. Exclude the player's own inventory slots because they
+        // are already included above (and appear in most container menus).
+        var menu = player.containerMenu;
+        if (menu != null && menu != player.inventoryMenu) {
+            for (var slot : menu.slots) {
+                if (slot.container == inventory) {
+                    continue;
+                }
+                ItemStack stack = slot.getItem();
+                if (!stack.isEmpty()) {
+                    addSupply(result, stack, stack.getCount());
+                }
             }
         }
         // Optional network storage is an additional source of supply for

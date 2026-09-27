@@ -1,5 +1,6 @@
 package com.lingmu0.JeiPlusPlusMod.mixin;
 
+import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
 import com.lingmu0.JeiPlusPlusMod.client.DirectoryIngredientElement;
 import mezz.jei.api.gui.inputs.RecipeSlotUnderMouse;
 import mezz.jei.api.ingredients.ITypedIngredient;
@@ -36,6 +37,9 @@ public abstract class RecipeSlotClickTargetFactoryMixin {
         IMouseOverable mouseOverable,
         CallbackInfoReturnable<Optional<IClickableIngredientInternal<?>>> cir
     ) {
+        if (!JeiPlusPlusConfig.RECIPE_INGREDIENT_DIRECTORY_ENABLED.get()) {
+            return;
+        }
         List<ITypedIngredient<?>> ingredients = slotUnderMouse.slot().getAllIngredients().toList();
         if (ingredients.size() <= 1) {
             return;

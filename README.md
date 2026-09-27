@@ -61,8 +61,9 @@ JEI++ 通过可选的客户端反射集成读取以下网络中的物品和流�
 ### 创造物品分类栏
 
 - 在 JEI 物品列表上方显示全部物品和创造模式分类。
-- 分类栏提供与物品槽等大的左右翻页按钮、整页滚轮翻页和居中的页码覆盖层。
-- 页码不占用普通物品槽位；分类栏、物品贴图、数量和页码覆盖层的层级经过调整，数字会显示在物品贴图上方。
+- 分类栏支持循环翻页；右键打开分类选择弹窗，每行显示四个分类，左键直接切换，右键置顶或取消置顶。
+- 置顶分类排在未置顶分类之前，后置顶的分类显示在更前面；可用 `creativeTabPageNumberEnabled` 单独控制页码显示。
+- 页码不占用普通物品槽位；选择弹窗绘制在底层物品贴图和高亮之上，弹窗打开时不显示底层物品提示。
 
 ### 物品分组与折叠
 
@@ -75,7 +76,8 @@ JEI++ 通过可选的客户端反射集成读取以下网络中的物品和流�
 
 ### 性能与兼容性
 
-- 配方候选、布局、背包/网络库存快照和流体访问器使用缓存，并按游戏刻和修订号进行刷新，避免每帧重复扫描。
+- 配方候选、按配方键缓存的配方快照、配方状态、布局、背包/网络库存快照和流体访问器使用缓存，并按游戏刻和修订号进行刷新，避免每帧重复扫描。
+- 当前打开的容器物品会计入配方树库存，并按配方树状态高亮；分类选择弹窗打开时会屏蔽底层 JEI、背包和容器物品的 tooltip。
 - 递归候选搜索具备深度、访问数量和循环保护；递归只用于配方树和默认配方相关流程。
 - 兼容多个 JEI 配方布局、书签、物品列表和渲染路径，并分别提供 Minecraft 1.20.1 Forge 与 1.21.1 NeoForge 实现。
 - JEI 重载、存档切换、终端切换、可选模组缺失或 API 变化时会安全清理和恢复运行时缓存。
@@ -91,6 +93,9 @@ JEI++ 通过可选的客户端反射集成读取以下网络中的物品和流�
 | `preferRecipeBookmarkOnOutput` | `true` | 在 JEI 书签优先排序开启时，收藏输出槽的对应配方 |
 | `hideRecipeBookmarkButton` | `true` | 隐藏 JEI 原生添加到书签按钮 |
 | `creativeTabBarEnabled` | `true` | 显示创造物品分类栏 |
+| `creativeTabPageNumberEnabled` | `true` | 显示分类栏当前页码 |
+| `recipeIngredientDirectoryEnabled` | `true` | 启用点击配方多候选槽位时打开物品目录的功能 |
+| `pinnedCreativeTabs` | `[]` | 分类弹窗置顶分类列表；通常通过右键分类调整 |
 | `stackGroupingEnabled` | `true` | 物品分组总开关 |
 | `nbtGroupingEnabled` | `true` | 折叠同一注册名的不同 NBT/组件 |
 | `tagGroupingEnabled` | `true` | 启用 Tag 分组 |
@@ -136,12 +141,12 @@ JSON 分组示例：
 
 ## 版本与依赖
 
-| 游戏版本 | 加载器 | Java | 当前开发依赖 |
-| --- | --- | --- | --- |
-| 1.20.1 | Forge 47.4.22 | 17 | JEI 15.58.0.209 |
-| 1.21.1 | NeoForge 21.1.238 | 21 | JEI 19.51.0.418 |
+| 游戏版本 | 加载器 | Java | JEI 开发依赖 | 模组版本 |
+| --- | --- | --- | --- | --- |
+| 1.20.1 | Forge 47.4.22 | 17 | JEI 15.59.0.210 | 1.0.6-1.20.1 |
+| 1.21.1 | NeoForge 21.1.238 | 21 | JEI 19.54.0.429 | 1.0.6-1.21.1 |
 
-1.20.1 的声明兼容范围从 JEI 15.19.5.99 起，1.21.1 的声明兼容范围从 JEI 19.27.0 起；表中版本是当前开发依赖。
+1.20.1 的声明兼容范围从 JEI 15.19.5.99 起，1.21.1 的声明兼容范围从 JEI 19.27.0 起；表中 JEI 版本是当前开发依赖。
 
 JEI 是可选的客户端依赖；服务端不需要安装 JEI++。模组本身不提供服务端游戏逻辑，若被加载到服务端也不会启用这些客户端功能。
 
@@ -201,8 +206,9 @@ Transfers prefer the terminal's client API, official packet path, or the generic
 ### Creative item tabs
 
 - All-items and creative-mode categories are shown above JEI's ingredient list.
-- Equal-sized left/right buttons, complete-page wheel scrolling, and a centered page overlay control the category pages.
-- Page numbers do not consume ingredient slots, and count/page overlays render above item textures.
+- Pages wrap around. Right-click opens a category picker with four entries per row; left-click switches categories, while right-click pins or unpins them.
+- Pinned categories are placed before unpinned categories, with the most recently pinned category first. `creativeTabPageNumberEnabled` controls the page indicator.
+- Page numbers do not consume ingredient slots. The picker renders above underlying item sprites and highlights, and hides their tooltips while open.
 
 ### Expandable item groups
 
@@ -214,17 +220,17 @@ Transfers prefer the terminal's client API, official packet path, or the generic
 
 ### Performance and compatibility
 
-Recipe candidates, layouts, inventory/network snapshots, and fluid accessors are cached and refreshed by game ticks and revisions. Recursive searches have depth, visit, and cycle limits and are used only for tree/default-recipe workflows.
+Recipe candidates, per-recipe snapshots, recipe status, layouts, inventory/network snapshots, and fluid accessors are cached and refreshed by game ticks and revisions. Items in the open container count toward recipe-tree inventory and highlighting. Recursive searches have depth, visit, and cycle limits and are used only for tree/default-recipe workflows.
 
 The addon supports multiple JEI layout, bookmark, ingredient-list, and renderer paths on both Minecraft 1.20.1 Forge and 1.21.1 NeoForge. JEI reloads, world changes, terminal changes, missing optional mods, and API changes are handled without retaining stale runtime objects.
 
 ### Versions and dependencies
 
-| Minecraft | Loader | Java | Current development dependency |
-| --- | --- | --- | --- |
-| 1.20.1 | Forge 47.4.22 | 17 | JEI 15.58.0.209 |
-| 1.21.1 | NeoForge 21.1.238 | 21 | JEI 19.51.0.418 |
+| Minecraft | Loader | Java | JEI development dependency | Mod version |
+| --- | --- | --- | --- | --- |
+| 1.20.1 | Forge 47.4.22 | 17 | JEI 15.59.0.210 | 1.0.6-1.20.1 |
+| 1.21.1 | NeoForge 21.1.238 | 21 | JEI 19.54.0.429 | 1.0.6-1.21.1 |
 
-The declared compatibility floor is JEI 15.19.5.99 for 1.20.1 and JEI 19.27.0 for 1.21.1; the table lists the current development dependencies.
+The declared compatibility floor is JEI 15.19.5.99 for 1.20.1 and JEI 19.27.0 for 1.21.1; the table lists the current JEI development dependencies.
 
 JEI++ is client-only and JEI is an optional client dependency. The server does not need to install JEI++.

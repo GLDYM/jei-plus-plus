@@ -1,6 +1,7 @@
 package com.lingmu0.JeiPlusPlusMod.mixin;
 
 import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
+import com.lingmu0.JeiPlusPlusMod.client.CreativeTabGridCompat;
 import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeFavorites;
 import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeScreen;
 import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeSession;
@@ -146,6 +147,19 @@ public abstract class BookmarkOverlayMixin {
         if (jeiPlusPlus$isTreeButtonScreen()) {
             jeiPlusPlus$placeTreeButton();
             jeiPlusPlus$treeButton.drawTooltips(graphics, mouseX, mouseY);
+        }
+    }
+
+    @Inject(method = "drawTooltips", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
+    private void jeiPlusPlus$hideBookmarkTooltipsWhileSelectorOpen(
+        Minecraft minecraft,
+        GuiGraphics graphics,
+        int mouseX,
+        int mouseY,
+        CallbackInfo ci
+    ) {
+        if (CreativeTabGridCompat.isAnySelectorOpen()) {
+            ci.cancel();
         }
     }
 

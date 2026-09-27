@@ -28,6 +28,21 @@ public final class JeiPlusPlusConfig {
             .comment("Show a creative-mode item tab bar above JEI's ingredient list.")
             .define("creativeTabBarEnabled", true);
 
+    public static final ModConfigSpec.BooleanValue CREATIVE_TAB_PAGE_NUMBER_ENABLED =
+        BUILDER
+            .comment("Show the current page number on the creative-mode item tab bar.")
+            .define("creativeTabPageNumberEnabled", true);
+
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> PINNED_CREATIVE_TABS =
+        BUILDER
+            .comment("Creative-tab ids pinned to the front of the tab order. Right-click a tab in the selector to change this list.")
+            .defineList("pinnedCreativeTabs", List.of(), value -> value instanceof String);
+
+    public static final ModConfigSpec.BooleanValue RECIPE_INGREDIENT_DIRECTORY_ENABLED =
+        BUILDER
+            .comment("Open JEI++'s ingredient directory when clicking a recipe slot with multiple output items.")
+            .define("recipeIngredientDirectoryEnabled", true);
+
     public static final ModConfigSpec.BooleanValue STACK_GROUPING_ENABLED =
         BUILDER
             .comment("Collapse related item variants in JEI's ingredient list. Click a group to expand it.")
