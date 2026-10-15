@@ -127,10 +127,32 @@ public final class JeiReflectionCompat {
     }
 
     public static BiPredicate<Double, Double> mouseOverPredicate(Object mouseOverable) {
+        final Method method;
+        try {
+            // JEI often passes a generated lambda here. Resolve the method on
+            // the public interface so invocation does not depend on the
+            // generated implementation class being accessible.
+            method = loadType(MOUSE_OVER_TYPES).getMethod(
+                "isMouseOver",
+                double.class,
+                double.class
+            );
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Unable to query JEI mouse-over target", exception);
+        }
+
         return (mouseX, mouseY) -> {
             try {
-                Method method = mouseOverable.getClass().getMethod("isMouseOver", double.class, double.class);
                 return (Boolean) method.invoke(mouseOverable, mouseX, mouseY);
+            } catch (InvocationTargetException exception) {
+                Throwable cause = exception.getCause();
+                if (cause instanceof RuntimeException runtimeException) {
+                    throw runtimeException;
+                }
+                if (cause instanceof Error error) {
+                    throw error;
+                }
+                throw new IllegalStateException("Unable to query JEI mouse-over target", cause);
             } catch (ReflectiveOperationException exception) {
                 throw new IllegalStateException("Unable to query JEI mouse-over target", exception);
             }
